@@ -173,14 +173,14 @@ public:
   bool rotate(bool clockwise, board const& base) {
     if (M_type == 'O') return true;
 
-    block_type next_block = M_block;
+    block_type next_block = {};
     {
       /* rotate */
       size_t frame = ((M_type == 'I')? 4:3);
 
       auto tmp = M_block;
-      for (auto& bi: M_block)
-        for (auto& bij: bi) bij = 0;
+      // for (auto& bi: M_block)
+      //   for (auto& bij: bi) bij = 0;
       if (clockwise) {
         for (size_t i = 0; i < frame; ++i)
           for (size_t j = 0; j < frame; ++j)
