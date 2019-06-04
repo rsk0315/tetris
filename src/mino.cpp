@@ -37,8 +37,8 @@ public:
     return M_board[i+S_margin][j+S_margin];
   }
 
-  void set(size_t i, size_t j, char) {
-    M_board[i+S_margin][j+S_margin] = 1;
+  void set(size_t i, size_t j, char t) {
+    M_board[i+S_margin][j+S_margin] = t;
   }
 
   size_t erase() {
@@ -74,6 +74,19 @@ class mino {
   int M_state = 0;
 
   size_t M_i = 0, M_j = 3;
+
+  static std::string S_color(char type) {
+    switch (type) {
+    case 'I': return "\x1b[1;36m";
+    case 'J': return "\x1b[1;34m";
+    case 'L': return "\x1b[1;37m";
+    case 'O': return "\x1b[1;33m";
+    case 'S': return "\x1b[1;31m";
+    case 'T': return "\x1b[1;35m";
+    case 'Z': return "\x1b[1;32m";
+    default: return "\x1b[m";
+    }
+  }
 
   void M_block_init() {
     switch (M_type) {
@@ -115,6 +128,10 @@ class mino {
     default:
       throw std::invalid_argument("invalid mino-type");
     }
+
+    for (auto& bi: M_block)
+      for (auto& bij: bi)
+        if (bij) bij = M_type;
   }
 
   std::array<std::pair<ptrdiff_t, ptrdiff_t>, 5> M_offset_array(bool clockwise) const {
@@ -271,7 +288,11 @@ class game {
       for (size_t j = 0; j < b.S_columns; ++j) {
         char cur = '.';
         if (b.M_board[i+b.S_margin][j+b.S_margin]) cur = '#';
-        fprintf(stderr, "%c%c", cur, j+1<b.S_columns? ' ':'\n');
+        fprintf(stderr, "%s%c%s%c",
+                mino::S_color(b.M_board[i+b.S_margin][j+b.S_margin]).c_str(),
+                cur,
+                mino::S_color(0).c_str(),
+                j+1<b.S_columns? ' ':'\n');
       }
   }
 
@@ -281,9 +302,21 @@ class game {
     for (size_t i = 0; i < b.S_rows; ++i)
       for (size_t j = 0; j < b.S_columns; ++j) {
         char cur = '.';
-        if (m.occupies(i, j)) cur = '=';
-        if (b.M_board[i+b.S_margin][j+b.S_margin]) cur = '#';
-        fprintf(stderr, "%c%c", cur, j+1<b.S_columns? ' ':'\n');
+        std::string color;
+        if (m.occupies(i, j)) {
+          cur = '=';
+          color = mino::S_color(m.M_type);
+        }
+        if (b.M_board[i+b.S_margin][j+b.S_margin]) {
+          cur = '#';
+          color = mino::S_color(b.M_board[i+b.S_margin][j+b.S_margin]);
+        }
+        fprintf(stderr, "%s%c%s%c",
+                color.c_str(),
+                cur,
+                mino::S_color(0).c_str(),
+                j+1<b.S_columns? ' ':'\n');
+        // fprintf(stderr, "%c%c", cur, j+1<b.S_columns? ' ':'\n');
       }
   }
   
@@ -292,7 +325,7 @@ class game {
     std::shuffle(M_minos.begin(), M_minos.end(), M_rng);
   }
 
-  char S_get_op() const {
+  static char S_get_op() {
     char res;
     do {
       res = getchar();
