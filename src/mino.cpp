@@ -45,6 +45,7 @@ public:
     size_t res = 0;
     // XXX undesired auxiliary array
     auto tmp = M_board;
+    size_t k = S_rows-1 + S_margin;
     for (size_t i = S_rows; i--;) {
       bool erasing = true;
       for (size_t j = 0; j < S_columns; ++j) {
@@ -54,13 +55,9 @@ public:
         }
       }
       if (erasing) {
-        // fprintf(stderr, "erasing %zu-th line\n", i);
         ++res;
-      }
-      if (i+S_margin-res < M_board.size()) {
-        tmp[i+S_margin] = M_board[i+S_margin-res];
       } else {
-        tmp[i+S_margin] = M_board[0];
+        tmp[k--] = M_board[i+S_margin];
       }
     }
     M_board = tmp;
