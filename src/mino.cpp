@@ -34,11 +34,37 @@ public:
   }
 
   bool occupied(size_t i, size_t j) const {
-    return M_board[S_margin+i][S_margin+j];
+    return M_board[i+S_margin][j+S_margin];
   }
 
   void set(size_t i, size_t j, char) {
-    M_board[S_margin+i][S_margin+j] = 1;
+    M_board[i+S_margin][j+S_margin] = 1;
+  }
+
+  size_t erase() {
+    size_t res = 0;
+    // XXX undesired auxiliary array
+    auto tmp = M_board;
+    for (size_t i = S_rows; i--;) {
+      bool erasing = true;
+      for (size_t j = 0; j < S_columns; ++j) {
+        if (!occupied(i, j)) {
+          erasing = false;
+          break;
+        }
+      }
+      if (erasing) {
+        // fprintf(stderr, "erasing %zu-th line\n", i);
+        ++res;
+      }
+      if (i+S_margin-res < M_board.size()) {
+        tmp[i+S_margin] = M_board[i+S_margin-res];
+      } else {
+        tmp[i+S_margin] = M_board[0];
+      }
+    }
+    M_board = tmp;
+    return res;
   }
 };
 
@@ -240,8 +266,20 @@ class game {
   std::string const S_minos = "ILJOSZT";
   std::string M_minos = S_minos;
   std::mt19937 M_rng;
+  char M_hold = 0;
+
+  void M_inspect(board const& b) const {
+    if (M_hold != 0) fprintf(stderr, "holding %c-mino\n", M_hold);
+    for (size_t i = 0; i < b.S_rows; ++i)
+      for (size_t j = 0; j < b.S_columns; ++j) {
+        char cur = '.';
+        if (b.M_board[i+b.S_margin][j+b.S_margin]) cur = '#';
+        fprintf(stderr, "%c%c", cur, j+1<b.S_columns? ' ':'\n');
+      }
+  }
 
   void M_inspect(board const& b, mino const& m) const {
+    if (M_hold != 0) fprintf(stderr, "holding %c-mino\n", M_hold);
     fprintf(stderr, "%c-mino: (%zu, %zu)\n", m.M_type, m.M_i, m.M_j);
     for (size_t i = 0; i < b.S_rows; ++i)
       for (size_t j = 0; j < b.S_columns; ++j) {
@@ -255,8 +293,6 @@ class game {
   void M_reset_minos() {
     M_minos = S_minos;
     std::shuffle(M_minos.begin(), M_minos.end(), M_rng);
-    M_minos = "ISZOSLJTT";
-    std::reverse(M_minos.begin(), M_minos.end());
   }
 
   char S_get_op() const {
@@ -295,6 +331,8 @@ class game {
           b.set(bi, bj, m.M_type);
         }
     }
+
+    b.erase();
     return true;
   }
 
@@ -325,7 +363,7 @@ class game {
       case 'J':
         while (m.move(+1, 0, b)) {}
         M_set_mino(m, b);
-        M_inspect(b, m);
+        M_inspect(b);
         return;
 
       case 'f':
@@ -334,6 +372,12 @@ class game {
       case 'd':
         valid = m.rotate(false, b);
         break;
+
+      case 'z':
+        // hold
+        if (M_hold != 0) M_minos.push_back(M_hold);
+        M_hold = m.M_type;
+        return;
       }
 
       fprintf(stderr, valid? "valid\n":"invalid\n");
