@@ -79,11 +79,11 @@ class mino {
     switch (type) {
     case 'I': return "\x1b[1;36m";
     case 'J': return "\x1b[1;34m";
-    case 'L': return "\x1b[1;37m";
+    case 'L': return "\x1b[1;38;5;202m";
     case 'O': return "\x1b[1;33m";
-    case 'S': return "\x1b[1;31m";
+    case 'S': return "\x1b[1;32m";
     case 'T': return "\x1b[1;35m";
-    case 'Z': return "\x1b[1;32m";
+    case 'Z': return "\x1b[1;31m";
     default: return "\x1b[m";
     }
   }
@@ -279,10 +279,17 @@ class game {
   board b;
   std::string const S_minos = "ILJOSZT";
   std::string M_minos = S_minos;
-  std::mt19937 M_rng;
+  std::string M_minos_next = S_minos;
+  std::mt19937 M_rng = std::mt19937(123);
   char M_hold = 0;
 
   void M_inspect(board const& b) const {
+    {
+      char next = M_minos_next.back();
+      if (!M_minos.empty()) next = M_minos.back();
+      fprintf(stderr, "next: %s%c%s-mino\n",
+              mino::S_color(next).c_str(), next, mino::S_color(0).c_str());
+    }
     if (M_hold != 0) fprintf(stderr, "holding %c-mino\n", M_hold);
     for (size_t i = 0; i < b.S_rows; ++i)
       for (size_t j = 0; j < b.S_columns; ++j) {
@@ -297,6 +304,12 @@ class game {
   }
 
   void M_inspect(board const& b, mino const& m) const {
+    {
+      char next = M_minos_next.back();
+      if (!M_minos.empty()) next = M_minos.back();
+      fprintf(stderr, "next: %s%c%s-mino\n",
+              mino::S_color(next).c_str(), next, mino::S_color(0).c_str());
+    }
     if (M_hold != 0) fprintf(stderr, "holding %c-mino\n", M_hold);
     fprintf(stderr, "%c-mino: (%zu, %zu)\n", m.M_type, m.M_i, m.M_j);
     for (size_t i = 0; i < b.S_rows; ++i)
@@ -320,9 +333,15 @@ class game {
       }
   }
   
-  void M_reset_minos() {
-    M_minos = S_minos;
+  void M_init_minos() {
     std::shuffle(M_minos.begin(), M_minos.end(), M_rng);
+    std::shuffle(M_minos_next.begin(), M_minos_next.end(), M_rng);
+  }
+
+  void M_reset_minos() {
+    M_minos = M_minos_next;
+    M_minos_next = S_minos;
+    std::shuffle(M_minos_next.begin(), M_minos_next.end(), M_rng);
   }
 
   static char S_get_op() {
@@ -417,7 +436,7 @@ class game {
 
 public:
   game() {
-    M_reset_minos();
+    M_init_minos();
   }
 
   void play() {
