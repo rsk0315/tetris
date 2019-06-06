@@ -11,6 +11,8 @@
 #include <string>
 #include <random>
 
+#include <ncurses.h>
+
 class game;
 class board;
 class mino;
@@ -287,19 +289,20 @@ class game {
     {
       char next = M_minos_next.back();
       if (!M_minos.empty()) next = M_minos.back();
-      fprintf(stderr, "next: %s%c%s-mino\n",
+      fprintf(stderr, "next: %s%c%s-mino\r\n",
               mino::S_color(next).c_str(), next, mino::S_color(0).c_str());
     }
-    if (M_hold != 0) fprintf(stderr, "holding %c-mino\n", M_hold);
+    if (M_hold != 0) fprintf(stderr, "holding %s%c%s-mino\r\n",
+                             mino::S_color(M_hold).c_str(), M_hold, mino::S_color(0).c_str());
     for (size_t i = 0; i < b.S_rows; ++i)
       for (size_t j = 0; j < b.S_columns; ++j) {
         char cur = '.';
         if (b.M_board[i+b.S_margin][j+b.S_margin]) cur = '#';
-        fprintf(stderr, "%s%c%s%c",
+        fprintf(stderr, "%s%c%s%s",
                 mino::S_color(b.M_board[i+b.S_margin][j+b.S_margin]).c_str(),
                 cur,
                 mino::S_color(0).c_str(),
-                j+1<b.S_columns? ' ':'\n');
+                j+1<b.S_columns? " ":"\r\n");
       }
   }
 
@@ -307,11 +310,12 @@ class game {
     {
       char next = M_minos_next.back();
       if (!M_minos.empty()) next = M_minos.back();
-      fprintf(stderr, "next: %s%c%s-mino\n",
+      fprintf(stderr, "next: %s%c%s-mino\r\n",
               mino::S_color(next).c_str(), next, mino::S_color(0).c_str());
     }
-    if (M_hold != 0) fprintf(stderr, "holding %c-mino\n", M_hold);
-    fprintf(stderr, "%c-mino: (%zu, %zu)\n", m.M_type, m.M_i, m.M_j);
+    if (M_hold != 0) fprintf(stderr, "holding %s%c%s-mino\r\n",
+                             mino::S_color(M_hold).c_str(), M_hold, mino::S_color(0).c_str());
+    // fprintf(stderr, "%c-mino: (%zu, %zu)\n", m.M_type, m.M_i, m.M_j);
     mino ghost = m;
     while (ghost.move(+1, 0, b)) {};
     for (size_t i = 0; i < b.S_rows; ++i)
@@ -329,11 +333,11 @@ class game {
           cur = '#';
           color = mino::S_color(b.M_board[i+b.S_margin][j+b.S_margin]);
         }
-        fprintf(stderr, "%s%c%s%c",
+        fprintf(stderr, "%s%c%s%s",
                 color.c_str(),
                 cur,
                 mino::S_color(0).c_str(),
-                j+1<b.S_columns? ' ':'\n');
+                j+1<b.S_columns? " ":"\r\n");
       }
   }
   
@@ -352,7 +356,8 @@ class game {
     char res;
     do {
       res = getchar();
-      fprintf(stderr, "op: %c\n", res);
+      // fprintf(stderr, "op: %c\n", res);
+      // res = getch();
     } while (!(res == EOF || !isspace(res)));
     return res;
   }
@@ -394,10 +399,11 @@ class game {
   }
 
   void M_put_mino() {
-    fprintf(stderr, "putting: %c\n", M_minos.back());
     mino m(M_minos.back());
     M_minos.pop_back();
 
+    clear();
+    refresh();
     M_inspect(b, m);
 
     while (true) {
@@ -420,7 +426,9 @@ class game {
       case 'J':
         while (m.move(+1, 0, b)) {}
         M_set_mino(m, b);
-        M_inspect(b);
+        // clear();
+        // refresh();
+        // M_inspect(b);
         return;
 
       case 'f':
@@ -434,18 +442,43 @@ class game {
         // hold
         if (M_hold != 0) M_minos.push_back(M_hold);
         M_hold = m.M_type;
+        clear();
+        refresh();
         return;
       }
 
-      fprintf(stderr, valid? "valid\n":"invalid\n");
+      clear();
+      refresh();
+      // fprintf(stderr, valid? "valid\n":"invalid\n");
       M_inspect(b, m);
     }
+  }
+
+  void M_init_display() const {
+    // fprintf(stderr, "\x1b[?1049h");
+    initscr();
+    cbreak();
+    noecho();
+    nonl();
+    intrflush(stdscr, false);
+    keypad(stdscr, true);
+    refresh();
+  }
+
+  void M_restore_display() const {
+    // fprintf(stderr, "\x1b[?1049l");
+    endwin();
   }
 
 public:
   game() {
     M_init_rng();
     M_init_minos();
+    M_init_display();
+  }
+
+  ~game() {
+    M_restore_display();
   }
 
   void play() {
