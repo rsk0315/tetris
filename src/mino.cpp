@@ -31,6 +31,9 @@ public:
   board(board const&) = default;
   board(board&&) = default;
 
+  board& operator =(board const&) = default;
+  board& operator =(board&&) = default;
+
   bool out_of_range(size_t i, size_t j) const {
     return (!(i < S_rows && j < S_columns));
   }
@@ -80,7 +83,7 @@ class mino {
   static std::string S_color(char type) {
     switch (type) {
     case 'I': return "\x1b[1;36m";
-    case 'J': return "\x1b[1;34m";
+    case 'J': return "\x1b[1;38;5;39m";
     case 'L': return "\x1b[1;38;5;202m";
     case 'O': return "\x1b[1;33m";
     case 'S': return "\x1b[1;32m";
@@ -342,6 +345,7 @@ class game {
   }
   
   void M_init_minos() {
+    M_minos = M_minos_next = S_minos;
     std::shuffle(M_minos.begin(), M_minos.end(), M_rng);
     std::shuffle(M_minos_next.begin(), M_minos_next.end(), M_rng);
   }
@@ -398,13 +402,20 @@ class game {
     return true;
   }
 
-  void M_put_mino() {
+  bool M_put_mino() {
     mino m(M_minos.back());
     M_minos.pop_back();
 
     clear();
     refresh();
     M_inspect(b, m);
+
+    for (size_t i = 0; i < 4; ++i) {
+      for (size_t j = 0; j < 4; ++j) {
+        if (!m.M_block[i][j]) continue;
+        if (b.occupied(m.M_i+i, m.M_j+j)) return false;
+      }
+    }
 
     while (true) {
       char op = S_get_op();
@@ -429,7 +440,7 @@ class game {
         // clear();
         // refresh();
         // M_inspect(b);
-        return;
+        return true;
 
       case 'f':
         valid = m.rotate(true, b);
@@ -444,7 +455,7 @@ class game {
         M_hold = m.M_type;
         clear();
         refresh();
-        return;
+        return true;
       }
 
       clear();
@@ -473,7 +484,7 @@ class game {
 public:
   game() {
     M_init_rng();
-    M_init_minos();
+    // M_init_minos();
     M_init_display();
   }
 
@@ -483,8 +494,19 @@ public:
 
   void play() {
     do {
-      if (M_minos.empty()) M_reset_minos();
-      M_put_mino();
+      M_init_minos();
+      b = board();
+      M_hold = 0;
+      do {
+        if (M_minos.empty()) M_reset_minos();
+      } while (M_put_mino());
+      fprintf(stderr, "[R]eplay / [Q]uit\r\n");
+
+      char reply = 0;
+      do {
+        reply = tolower(getch());
+      } while (!(reply == 'r' || reply == 'q'));
+      if (reply == 'q') break;
     } while (true);
   }
 };
