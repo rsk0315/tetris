@@ -326,8 +326,8 @@ class game {
           cur = '=';
           color = mino::S_color(m.M_type);
         } else if (ghost.occupies(i, j)) {
-          cur = 'x';
-          color = mino::S_color(0);
+          cur = '=';
+          color = "\x1b[1;38;5;244m";
         }
         if (b.M_board[i+b.S_margin][j+b.S_margin]) {
           cur = '#';
@@ -363,7 +363,7 @@ class game {
   }
 
   void M_init_rng() {
-    M_rng = std::mt19937(123);  // FIXME use chrono
+    M_rng = std::mt19937(std::random_device()());
   }
 
   bool M_set_mino(mino const& m, board& b) {
