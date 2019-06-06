@@ -91,40 +91,40 @@ class mino {
   void M_block_init() {
     switch (M_type) {
     case 'I':
-      M_block = block_type{ {{0, 0, 0, 0},
-                             {1, 1, 1, 1},
-                             {0, 0, 0, 0},
-                             {0, 0, 0, 0}} }; break;
+      M_block = { {{0, 0, 0, 0},
+                   {1, 1, 1, 1},
+                   {0, 0, 0, 0},
+                   {0, 0, 0, 0}} }; break;
     case 'J':
-      M_block = block_type{ {{1, 0, 0, 0},
-                             {1, 1, 1, 0},
-                             {0, 0, 0, 0},
-                             {0, 0, 0, 0}} }; break;
+      M_block = { {{1, 0, 0, 0},
+                   {1, 1, 1, 0},
+                   {0, 0, 0, 0},
+                   {0, 0, 0, 0}} }; break;
     case 'L':
-      M_block = block_type{ {{0, 0, 1, 0},
-                             {1, 1, 1, 0},
-                             {0, 0, 0, 0},
-                             {0, 0, 0, 0}} }; break;
+      M_block = { {{0, 0, 1, 0},
+                   {1, 1, 1, 0},
+                   {0, 0, 0, 0},
+                   {0, 0, 0, 0}} }; break;
     case 'O':
-      M_block = block_type{ {{0, 1, 1, 0},
-                             {0, 1, 1, 0},
-                             {0, 0, 0, 0},
-                             {0, 0, 0, 0}} }; break;
+      M_block = { {{0, 1, 1, 0},
+                   {0, 1, 1, 0},
+                   {0, 0, 0, 0},
+                   {0, 0, 0, 0}} }; break;
     case 'S':
-      M_block = block_type{ {{0, 1, 1, 0},
-                             {1, 1, 0, 0},
-                             {0, 0, 0, 0},
-                             {0, 0, 0, 0}} }; break;
+      M_block = { {{0, 1, 1, 0},
+                   {1, 1, 0, 0},
+                   {0, 0, 0, 0},
+                   {0, 0, 0, 0}} }; break;
     case 'T':
-      M_block = block_type{ {{0, 1, 0, 0},
-                             {1, 1, 1, 0},
-                             {0, 0, 0, 0},
-                             {0, 0, 0, 0}} }; break;
+      M_block = { {{0, 1, 0, 0},
+                   {1, 1, 1, 0},
+                   {0, 0, 0, 0},
+                   {0, 0, 0, 0}} }; break;
     case 'Z':
-      M_block = block_type{ {{1, 1, 0, 0},
-                             {0, 1, 1, 0},
-                             {0, 0, 0, 0},
-                             {0, 0, 0, 0}} }; break;
+      M_block = { {{1, 1, 0, 0},
+                   {0, 1, 1, 0},
+                   {0, 0, 0, 0},
+                   {0, 0, 0, 0}} }; break;
     default:
       throw std::invalid_argument("invalid mino-type");
     }
@@ -280,7 +280,7 @@ class game {
   std::string const S_minos = "ILJOSZT";
   std::string M_minos = S_minos;
   std::string M_minos_next = S_minos;
-  std::mt19937 M_rng = std::mt19937(123);
+  std::mt19937 M_rng;
   char M_hold = 0;
 
   void M_inspect(board const& b) const {
@@ -312,6 +312,8 @@ class game {
     }
     if (M_hold != 0) fprintf(stderr, "holding %c-mino\n", M_hold);
     fprintf(stderr, "%c-mino: (%zu, %zu)\n", m.M_type, m.M_i, m.M_j);
+    mino ghost = m;
+    while (ghost.move(+1, 0, b)) {};
     for (size_t i = 0; i < b.S_rows; ++i)
       for (size_t j = 0; j < b.S_columns; ++j) {
         char cur = '.';
@@ -319,6 +321,9 @@ class game {
         if (m.occupies(i, j)) {
           cur = '=';
           color = mino::S_color(m.M_type);
+        } else if (ghost.occupies(i, j)) {
+          cur = 'x';
+          color = mino::S_color(0);
         }
         if (b.M_board[i+b.S_margin][j+b.S_margin]) {
           cur = '#';
@@ -329,7 +334,6 @@ class game {
                 cur,
                 mino::S_color(0).c_str(),
                 j+1<b.S_columns? ' ':'\n');
-        // fprintf(stderr, "%c%c", cur, j+1<b.S_columns? ' ':'\n');
       }
   }
   
@@ -351,6 +355,10 @@ class game {
       fprintf(stderr, "op: %c\n", res);
     } while (!(res == EOF || !isspace(res)));
     return res;
+  }
+
+  void M_init_rng() {
+    M_rng = std::mt19937(123);  // FIXME use chrono
   }
 
   bool M_set_mino(mino const& m, board& b) {
@@ -436,6 +444,7 @@ class game {
 
 public:
   game() {
+    M_init_rng();
     M_init_minos();
   }
 
