@@ -288,15 +288,27 @@ class game {
   std::mt19937 M_rng;
   char M_hold = 0;
 
-  void M_inspect(board const& b) const {
-    {
-      char next = M_minos_next.back();
-      if (!M_minos.empty()) next = M_minos.back();
-      fprintf(stderr, "next: %s%c%s-mino\r\n",
-              mino::S_color(next).c_str(), next, mino::S_color(0).c_str());
+  void M_show_next() const {
+    std::string tmp(M_minos.rbegin(), M_minos.rend());
+    tmp += std::string(M_minos_next.rbegin(), M_minos_next.rend());
+    fprintf(stderr, "next:");
+    for (size_t i = 0; i <= 2; ++i)
+      fprintf(stderr, " %s%c%s", mino::S_color(tmp[i]).c_str(), tmp[i], mino::S_color(0).c_str());
+    fprintf(stderr, "\r\n");
+  }
+
+  void M_show_hold() const {
+    fprintf(stderr, "hold: ");
+    if (M_hold) {
+      fprintf(stderr, "%s%c%s",
+              mino::S_color(M_hold).c_str(), M_hold, mino::S_color(0).c_str());
     }
-    if (M_hold != 0) fprintf(stderr, "holding %s%c%s-mino\r\n",
-                             mino::S_color(M_hold).c_str(), M_hold, mino::S_color(0).c_str());
+    fprintf(stderr, "\r\n");
+  }
+
+  void M_inspect(board const& b) const {
+    M_show_next();
+    M_show_hold();
     for (size_t i = 0; i < b.S_rows; ++i)
       for (size_t j = 0; j < b.S_columns; ++j) {
         char cur = '.';
@@ -310,15 +322,8 @@ class game {
   }
 
   void M_inspect(board const& b, mino const& m) const {
-    {
-      char next = M_minos_next.back();
-      if (!M_minos.empty()) next = M_minos.back();
-      fprintf(stderr, "next: %s%c%s-mino\r\n",
-              mino::S_color(next).c_str(), next, mino::S_color(0).c_str());
-    }
-    if (M_hold != 0) fprintf(stderr, "holding %s%c%s-mino\r\n",
-                             mino::S_color(M_hold).c_str(), M_hold, mino::S_color(0).c_str());
-    // fprintf(stderr, "%c-mino: (%zu, %zu)\n", m.M_type, m.M_i, m.M_j);
+    M_show_next();
+    M_show_hold();
     mino ghost = m;
     while (ghost.move(+1, 0, b)) {};
     for (size_t i = 0; i < b.S_rows; ++i)
